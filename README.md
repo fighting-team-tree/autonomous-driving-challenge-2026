@@ -35,11 +35,38 @@
 3. **[실험 기록](https://fighting-team-tree.github.io/autonomous-driving-challenge-2026/experiments/)**
 4. Wiki에서 환경 세팅과 데이터 받는 법 확인
 
-## 로컬에서 문서 보기
+## 작업 시작하기
+
+**`main`은 보호돼 있어 직접 푸시가 안 됩니다.** 브랜치 → PR로 작업하세요.
+
+```bash
+git switch -c exp/M002-token-slim     # exp/ | docs/ | infra/ | fix/
+git push -u origin exp/M002-token-slim
+gh pr create --fill
+gh pr merge --squash --auto           # CI 통과하는 즉시 자동 머지
+```
+
+**승인은 필요 없습니다.** CI(`build`, `guard`) 두 개만 통과하면 혼자 머지해도 됩니다.
+`--auto`를 쓰면 CI를 지켜보지 않아도 됩니다.
+
+| 기계가 막음 | 사람에게 맡김 |
+|---|---|
+| PR 없이 main 푸시 불가 | 승인 인원 **0명** |
+| CI 통과 필수 | 리뷰 코멘트 해결 여부 |
+| force push · main 삭제 불가 | |
+
+### 로컬에서 문서 보기
 
 ```bash
 pip install -r requirements-docs.txt
 mkdocs serve          # http://localhost:8000
+```
+
+### 커밋 전 자체 점검
+
+```bash
+python3 scripts/gen_experiment_index.py    # 실험 인덱스 생성 훅
+python3 scripts/check_diff.py --self-test  # 반입 금지 파일 검사 로직
 ```
 
 ## ⚠️ 이 저장소는 public입니다
