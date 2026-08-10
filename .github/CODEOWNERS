@@ -1,0 +1,13 @@
+# 리뷰 "요청"만 자동으로 걸립니다. 승인을 강제하지는 않습니다.
+# (브랜치 보호에서 require_code_owner_reviews 를 끈 상태)
+#
+# 목적: 팀 전체에 영향을 주는 파일이 조용히 바뀌는 것을 막는 알림.
+# 실험 기록(docs/experiments/)은 일부러 비워뒀습니다 — 본인이 쓰고 본인이 머지합니다.
+
+/AGENTS.md              @runefor @ashrate @avatar196kc @Luneberry
+/CLAUDE.md              @runefor @ashrate @avatar196kc @Luneberry
+/mkdocs.yml             @runefor @ashrate @avatar196kc @Luneberry
+/.gitignore             @runefor @ashrate @avatar196kc @Luneberry
+/.github/               @runefor @ashrate @avatar196kc @Luneberry
+/scripts/               @runefor @ashrate @avatar196kc @Luneberry
+/docs/decisions.md      @runefor @ashrate @avatar196kc @Luneberry

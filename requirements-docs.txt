@@ -1,0 +1,5 @@
+# MkDocs 2.0은 플러그인/테마 시스템을 제거해 마이그레이션 경로가 없다고 예고돼 있다.
+# 대회 기간(~9/23) 중 CI가 갑자기 깨지지 않도록 메이저 버전을 고정한다.
+# https://squidfunk.github.io/mkdocs-material/blog/2026/02/18/mkdocs-2.0/
+mkdocs>=1.6,<2.0
+mkdocs-material>=9.5,<10

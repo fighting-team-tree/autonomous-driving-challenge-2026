@@ -1,0 +1,90 @@
+site_name: 2026 자율주행 AI 챌린지 — Team Tree
+site_description: 가설·실험·결과 공유 저장소
+site_url: https://fighting-team-tree.github.io/autonomous-driving-challenge-2026/
+repo_url: https://github.com/fighting-team-tree/autonomous-driving-challenge-2026
+repo_name: fighting-team-tree/autonomous-driving-challenge-2026
+edit_uri: edit/main/docs/
+docs_dir: docs
+
+theme:
+  name: material
+  language: ko
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - navigation.indexes
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: 다크 모드로
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: 라이트 모드로
+
+plugins:
+  - search:
+      # 한국어는 공백 구분이라 기본 lunr로 동작한다. 하이픈/점만 추가로 분리.
+      separator: '[\s\-\.]+'
+
+# MkDocs 1.4+ 네이티브 hook. 플러그인 설치가 필요 없다.
+hooks:
+  - scripts/gen_experiment_index.py
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
+  # AGENTS.md를 docs/conventions.md에서 include하기 위함 (규칙 정본 1개 유지)
+  - pymdownx.snippets:
+      base_path: ['.']
+      check_paths: true
+
+extra_javascript:
+  - assets/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - 홈: index.md
+  - 대회 정보:
+      - competition/overview.md
+      - competition/briefing.md
+      - 트랙 — 모션 Planning: competition/planning.md
+      - 트랙 — 미래궤적 예측: competition/prediction.md
+      - 트랙 — E2E Driving: competition/e2e.md
+  - 실험:
+      - experiments/index.md
+      - 템플릿: experiments/_template.md
+  - 결정 기록: decisions.md
+  - 작업 규칙: conventions.md
+
+# 개별 실험 문서는 nav에 넣지 않는다. experiments/index.md 의 자동 생성 표가
+# 목록 역할을 하므로, 실험이 늘 때마다 nav를 손보는 부담을 만들지 않는다.
+not_in_nav: |
+  /experiments/**/EXP-*.md
+

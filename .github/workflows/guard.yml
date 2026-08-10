@@ -1,0 +1,33 @@
+name: guard
+
+# 데이터·체크포인트·시크릿이 레포에 들어오는 것을 막는다.
+#
+# GitHub의 push ruleset(파일 크기/확장자 차단)은 Team 플랜 + private 레포 전용이라
+# 우리(Free + public)는 쓸 수 없다. 이 워크플로가 그 역할을 대신하므로,
+# main 브랜치 보호의 "필수 상태 검사"에 반드시 포함되어야 한다.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # diff 계산에 base..head 이력이 모두 필요하다
+          fetch-depth: 0
+
+      - name: 검사 로직 자체 점검
+        run: python3 scripts/check_diff.py --self-test
+
+      - name: 반입 금지 파일 검사
+        env:
+          # 셸에 직접 보간하지 않고 환경변수로 넘긴다
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 scripts/check_diff.py "$BASE_SHA" "$HEAD_SHA"
