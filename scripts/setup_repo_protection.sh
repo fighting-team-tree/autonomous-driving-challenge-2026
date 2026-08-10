@@ -57,13 +57,14 @@ JSON
 
 echo
 echo "✅ 완료. 적용된 내용:"
+# jq 객체 키에 비ASCII를 쓰려면 반드시 따옴표로 감싸야 한다 (안 그러면 파싱 실패)
 gh api "repos/$REPO/branches/main/protection" --jq '{
-  PR_필수: (.required_pull_request_reviews != null),
-  필요_승인수: .required_pull_request_reviews.required_approving_review_count,
-  필수_검사: .required_status_checks.contexts,
-  관리자도_적용: .enforce_admins.enabled,
-  force_push_허용: .allow_force_pushes.enabled,
-  삭제_허용: .allow_deletions.enabled
+  "PR 필수": (.required_pull_request_reviews != null),
+  "필요 승인 수": .required_pull_request_reviews.required_approving_review_count,
+  "필수 검사": .required_status_checks.contexts,
+  "관리자도 적용": .enforce_admins.enabled,
+  "force push 허용": .allow_force_pushes.enabled,
+  "삭제 허용": .allow_deletions.enabled
 }'
 
 cat <<'NOTE'
