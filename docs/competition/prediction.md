@@ -18,9 +18,25 @@
 예측 대상 에이전트는 **JSON 파일로 명시**되어 제공됩니다. 현재 시점 기준으로 보이는
 에이전트의 미래 궤적을 예측하면 됩니다.
 
+## 배포물
+
+| 항목 | 파일 |
+|---|---|
+| 베이스라인 | `baseline/2_MotionPrediction/motion_prediction_baseline_v20260729.tar.gz` |
+| 테스트셋 | `test(@prediction task)/test_public.tar.gz` + `test_public_manifest.json` + `test_public_md5.txt` |
+
+**md5 파일이 함께 옵니다.** 428GB급 전송이라 중간에 깨질 수 있으니 압축 해제 전에
+반드시 검증하세요.
+
 ## 데이터셋
 
 [모션 Planning](planning.md#dataset)과 **완전히 동일**합니다. 전처리 파이프라인을 공유하세요.
+
+!!! warning "PDF의 데이터 표는 구버전입니다"
+    가이드라인 PDF는 "2024.12 / 2025.03 서울·제주"라고 적고 있지만, 실제 배포된
+    데이터는 **hanam · jeju · livinglab** 3개 지역이고 기간은 2025-02 ~ 2026-04입니다.
+    원본은 **301-step** TFRecord(과거 150 / 현재 1 / 미래 150 @ 10Hz)이며,
+    9.1초 단위로 쓰려면 잘라내야 합니다.
 
 - 학습: **85,000 scene 이상** (GT 포함)
 - 테스트: **4,300 scene** (하남·제주만). GT 미포함
