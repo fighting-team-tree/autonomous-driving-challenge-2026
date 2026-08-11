@@ -2,6 +2,19 @@
 
 출처: [KADIF 공지 417번](https://www.kadif.kr/news/notice.php?ptype=view&idx=417&category=6) 첨부 「2026 자율주행 AI 챌린지 참여 가이드라인」 (17p)
 
+!!! warning "PDF보다 배포된 코드가 정확합니다"
+    실제 데이터·베이스라인을 받아보니 PDF와 어긋나는 부분이 있습니다.
+    **충돌하면 배포된 코드·README를 따르세요.**
+
+    | 항목 | PDF | 실제 |
+    |---|---|---|
+    | 데이터 지역 | 서울 / 제주 | **hanam / jeju / livinglab** |
+    | 데이터 기간 | 2024.12, 2025.03 | **2025-02 ~ 2026-04** |
+    | Planning 컷오프 | PDM 대비 1.5배 | **전체 평가 30분 제한** (베이스라인 5분30초 @4090) |
+    | Planning 베이스라인 | valeoai/V-Max | **jaehyuck0103/V-Max** (챌린지 fork) + 별도 평가 저장소 |
+
+    자세한 내용은 [트랙 — 모션 Planning](planning.md) 참고.
+
 ## 기본 정보
 
 - **대회명**: 2026 자율주행 AI 챌린지 (3회차)
