@@ -8,10 +8,13 @@ caddy (자동 HTTPS)  →  mlflow (내장 basic-auth)  →  postgres (백엔드 
                           R2 (artifact, 서버가 대리 전송)
 ```
 
-> **⚠️ 이 스택은 아직 실제로 기동해본 적이 없습니다.** 문법 검증만 거쳤습니다.
-> VM에서 처음 띄운 사람은 아래 "검증" 절을 실행하고, 막힌 부분을
-> [Wiki 트러블슈팅](https://github.com/fighting-team-tree/autonomous-driving-challenge-2026/wiki)에
-> 남겨주세요.
+> ✅ **로컬에서 전 구간 검증 완료** (2026-08-11, Docker 29.5.3 / Compose v5.1.4).
+> R2 자리에 MinIO를 세워 컨테이너 기동 → HTTPS → 인증 차단 → run 기록 →
+> artifact 오브젝트 스토리지 안착까지 확인했습니다. 검증에 쓴 하네스는
+> `compose.test.yml` 로 남겨뒀습니다.
+>
+> 다만 **실제 VM에서의 Let's Encrypt 발급은 확인하지 못했습니다** (로컬은 Caddy
+> 내부 CA를 씁니다). 첫 배포자가 아래 "검증" 절을 실행해주세요.
 
 ## 왜 이렇게 구성했나
 
@@ -126,6 +129,51 @@ docker compose exec -T postgres pg_dump -U mlflow mlflow | gzip > mlflow-$(date 
 ```
 
 주 1회, 특히 첫 제출(8/18) 직전에 받아두세요.
+
+## 로컬 스모크 테스트
+
+compose 를 고쳤다면 VM 에 올리기 전에 노트북에서 먼저 돌려보세요.
+`compose.test.yml` 이 R2 자리에 MinIO 를 세우고 포트를 8080/8443 으로 옮깁니다.
+
+```bash
+cd infra/mlflow
+
+cat > .env <<EOF
+POSTGRES_PASSWORD=testpg1234
+MLFLOW_FLASK_SERVER_SECRET_KEY=$(openssl rand -hex 32)
+R2_ACCESS_KEY_ID=minioadmin
+R2_SECRET_ACCESS_KEY=minioadmin123
+R2_ENDPOINT=http://minio:9000
+R2_BUCKET=mlflow-test
+MLFLOW_HOSTNAME=localhost
+ACME_EMAIL=test@example.com
+EOF
+sed -e 's/^admin_username = .*/admin_username = testadmin/' \
+    -e 's/^admin_password = .*/admin_password = testpass1234/' \
+    basic_auth.ini.example > basic_auth.ini
+
+docker compose -f docker-compose.yml -f compose.test.yml up -d --build
+
+# 인증 없이 → 401,  인증하면 → 200
+curl -sk -o /dev/null -w '%{http_code}\n' https://localhost:8443/api/2.0/mlflow/experiments/search
+curl -sk -u testadmin:testpass1234 -o /dev/null -w '%{http_code}\n' https://localhost:8443/api/2.0/mlflow/experiments/search
+
+docker compose -f docker-compose.yml -f compose.test.yml down -v
+rm -f .env basic_auth.ini
+```
+
+## 검증 중 실제로 걸렸던 것들
+
+로컬 검증에서 세 번 막혔습니다. 전부 반영돼 있으니 참고만 하세요.
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| `ImportError: ... requires the Flask-WTF package` 후 crash-loop | `mlflow` 만 설치하면 basic-auth 앱이 안 뜬다 | Dockerfile 에서 `mlflow[auth]` 설치 |
+| `A static secret key needs to be set for CSRF protection` | basic-auth 는 Flask 시크릿을 요구한다 | `MLFLOW_FLASK_SERVER_SECRET_KEY` 설정 |
+| 모든 API 가 `403 Invalid Host header - possible DNS rebinding attack detected` | MLflow 3.x 는 Host 헤더를 검증하고, **기본 허용은 localhost 와 사설 IP 뿐**이다 | `MLFLOW_SERVER_ALLOWED_HOSTS=${MLFLOW_HOSTNAME}` 설정 |
+
+마지막 항목이 특히 함정입니다. 로컬에서는 `localhost` 라 통과하지만,
+공개 호스트명으로 프록시하는 순간 **전부 403** 이 됩니다.
 
 ## 한계
 

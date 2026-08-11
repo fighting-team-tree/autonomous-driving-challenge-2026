@@ -1,0 +1,37 @@
+services:
+  # R2 대신 MinIO(S3 호환)를 세워서 artifact 대리 전송 경로를 검증한다
+  minio:
+    image: minio/minio
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+
+  createbucket:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        for i in $$(seq 1 30); do
+          mc alias set l http://minio:9000 minioadmin minioadmin123 && break
+          sleep 2
+        done
+        mc mb -p l/mlflow-test && echo BUCKET_READY
+
+  mlflow:
+    depends_on:
+      createbucket:
+        condition: service_completed_successfully
+    environment:
+      # 테스트에선 컨테이너명으로도 붙어야 하므로 허용 목록을 넓힌다.
+      # 실제 배포에서는 base 파일의 ${MLFLOW_HOSTNAME} 만 허용된다.
+      MLFLOW_SERVER_ALLOWED_HOSTS: "localhost,mlflow,mlflow:5000"
+
+  caddy:
+    # 기본 파일의 80/443 을 덧붙이지 않고 통째로 대체한다 (Compose 2.24+)
+    ports: !override
+      - "8080:80"
+      - "8443:443"

@@ -42,6 +42,13 @@ services:
       MLFLOW_ENABLE_PROXY_MULTIPART_UPLOAD: "true"
       # ── 내장 인증 ──────────────────────────────────────────────────
       MLFLOW_AUTH_CONFIG_PATH: /app/basic_auth.ini
+      # basic-auth 앱의 CSRF 보호에 필수. 없으면 기동 자체가 실패한다.
+      # 값이 바뀌면 기존 세션이 무효화되므로 한 번 정하면 바꾸지 않는다.
+      MLFLOW_FLASK_SERVER_SECRET_KEY: ${MLFLOW_FLASK_SERVER_SECRET_KEY:?}
+      # MLflow 3.x 는 Host 헤더를 검증한다(DNS rebinding 방어).
+      # 기본 허용은 localhost 와 사설 IP 뿐이라, 공개 호스트명으로 프록시하면
+      # 모든 요청이 403 "Invalid Host header" 로 떨어진다. 반드시 지정할 것.
+      MLFLOW_SERVER_ALLOWED_HOSTS: ${MLFLOW_HOSTNAME:?}
     volumes:
       # basic_auth.ini 는 관리자 비밀번호가 들어가므로 커밋하지 않는다.
       # basic_auth.ini.example 을 복사해서 VM 에서 만든다.
