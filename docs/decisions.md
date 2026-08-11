@@ -98,9 +98,26 @@ MLflow 서버는 기본적으로 인증이 없다. 공식 문서상 기본은 �
 | `--artifacts-destination` (서버 대리 전송) | 클라이언트에 R2 **쓰기** 키를 뿌리지 않아도 된다 |
 | `<VM_IP>.sslip.io` | 도메인 없이 Let's Encrypt 발급이 된다 |
 
-**미검증** — 이 스택은 아직 실제로 기동해본 적이 없다(문법 검증만 완료).
-VM에서 처음 띄우는 사람이 `infra/mlflow/README.md` 의 "검증" 절을 실행할 것.
-특히 **인증 없이 API를 호출했을 때 401이 나오는지** 반드시 확인한다.
+**검증 완료** (2026-08-11) — R2 자리에 MinIO를 세워 로컬에서 전 구간을 돌렸다.
+컨테이너 기동 → HTTPS → 미인증 401 / 오인증 401 / 정상 200 → run 기록 →
+artifact 오브젝트 스토리지 안착까지 확인. 하네스는 `infra/mlflow/compose.test.yml`.
+
+검증 과정에서 배포를 막았을 문제 3개를 잡았다. 셋 다 문서만 보고는 알 수 없었다:
+
+| 증상 | 원인 |
+|---|---|
+| basic-auth 앱 ImportError → crash-loop | `mlflow` 만으론 부족, `mlflow[auth]` 필요 |
+| CSRF secret key 없다며 기동 실패 | `MLFLOW_FLASK_SERVER_SECRET_KEY` 필수 |
+| 모든 API 403 `Invalid Host header` | MLflow 3.x 의 DNS rebinding 방어. **기본 허용이 localhost/사설 IP 뿐** |
+
+세 번째가 특히 함정이다 — 로컬에선 통과하고 공개 호스트명에서만 터진다.
+`MLFLOW_SERVER_ALLOWED_HOSTS` 를 반드시 지정해야 한다.
+
+인증 실패 시 동작이 **fail-closed** 임도 확인했다. auth 앱이 못 뜨면 인증 없이
+서비스되는 게 아니라 컨테이너가 crash-loop 한다.
+
+**아직 미검증** — 실제 VM에서의 Let's Encrypt 발급 (로컬은 Caddy 내부 CA 사용).
+MLflow 버전은 검증을 통과한 `3.15.1` 로 고정했다.
 
 **한계** — 인증이 MLflow 내장 한 겹이다. 프록시에 basic auth를 겹치면 클라이언트가
 헤더를 하나만 보낼 수 있어 충돌한다. 더 강하게 가려면 Cloudflare Tunnel + Access가

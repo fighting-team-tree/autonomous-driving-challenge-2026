@@ -3,11 +3,14 @@ FROM python:3.11-slim
 # psycopg2-binary : Postgres 백엔드 스토어
 # boto3           : R2(S3 호환) artifact 저장소
 #
-# mlflow 버전은 major만 고정해 두었다. VM에서 첫 기동에 성공하면
-# `docker compose exec mlflow pip freeze | grep -i mlflow` 로 확인한 정확한 버전으로
-# 아래를 고정하는 것을 권장한다 (재현성 평가 대비).
+# [auth] extra 는 필수다. 빼면 `--app-name basic-auth` 가 Flask-WTF(CSRF) 부재로
+# ImportError 를 내고 컨테이너가 crash-loop 한다.
+# (다행히 인증 없이 뜨지는 않는다 — fail-closed 확인함)
+#
+# 버전은 정확히 고정한다. 로컬 스택 검증을 통과한 버전이며,
+# 재현성 평가에서 환경을 되살릴 수 있어야 한다.
 RUN pip install --no-cache-dir \
-        "mlflow>=3.1,<4" \
+        "mlflow[auth]==3.15.1" \
         psycopg2-binary \
         boto3
 
