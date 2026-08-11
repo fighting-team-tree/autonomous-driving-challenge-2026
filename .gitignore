@@ -49,6 +49,8 @@ mlflow.db
 credentials*
 *-key.json
 service-account*.json
+# MLflow 관리자 비밀번호가 들어간다. .example 만 커밋한다.
+infra/mlflow/basic_auth.ini
 
 # ─────────────────────────────────────────────────────────────
 # Python

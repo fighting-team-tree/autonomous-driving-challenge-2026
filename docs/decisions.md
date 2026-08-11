@@ -67,6 +67,45 @@ VM이어야 한다.
 
 **주의** — 무료 티어 VM 디스크에 체크포인트를 쌓으면 금방 찬다. artifact는 R2로.
 
+**배포** — 설정을 `infra/mlflow/` 에 코드로 관리하고 Docker Compose로 배포한다(D-010).
+
+---
+
+## D-010. MLflow는 반드시 인증을 걸고 노출한다
+
+**결정** — `caddy(자동 HTTPS) → mlflow(내장 basic-auth) → postgres` 구성으로 배포한다.
+설정은 `infra/mlflow/` 에 코드로 관리한다.
+
+**이유 — 이게 없으면 D-002가 역효과를 낸다**
+
+MLflow 서버는 기본적으로 인증이 없다. 공식 문서상 기본은 로컬 연결만 받고,
+외부에 열려면 `--host 0.0.0.0`을 줘야 한다. 즉 **노출하는 순간 아무나 접속 가능**하다.
+
+우리는 D-002에서 "복붙 가능한 설정값은 MLflow에만 둔다"고 정했다. 인증이 없으면
+문서에서 일부러 숨긴 seed·하이퍼파라미터·split을 MLflow UI에서 그대로 보게 된다.
+완화책이 사라지는 게 아니라 **흩어져 있던 민감 값을 검색 가능한 한 곳에 모아주는**
+역효과가 난다. 경쟁팀은 165개다.
+
+`basic_auth.ini` 의 `default_permission` 은 반드시 `NO_PERMISSIONS` 여야 한다.
+`READ` 로 두면 익명 읽기가 열린다.
+
+**부수 결정**
+
+| 선택 | 이유 |
+|---|---|
+| Postgres (SQLite 아님) | 4명 동시 학습 시 SQLite는 `database is locked` 가 난다 |
+| Caddy + HTTPS | basic auth 자격증명은 base64 평문. Colab 접속은 공용 경로를 지난다 |
+| `--artifacts-destination` (서버 대리 전송) | 클라이언트에 R2 **쓰기** 키를 뿌리지 않아도 된다 |
+| `<VM_IP>.sslip.io` | 도메인 없이 Let's Encrypt 발급이 된다 |
+
+**미검증** — 이 스택은 아직 실제로 기동해본 적이 없다(문법 검증만 완료).
+VM에서 처음 띄우는 사람이 `infra/mlflow/README.md` 의 "검증" 절을 실행할 것.
+특히 **인증 없이 API를 호출했을 때 401이 나오는지** 반드시 확인한다.
+
+**한계** — 인증이 MLflow 내장 한 겹이다. 프록시에 basic auth를 겹치면 클라이언트가
+헤더를 하나만 보낼 수 있어 충돌한다. 더 강하게 가려면 Cloudflare Tunnel + Access가
+다음 단계이나, Cloudflare에 등록된 도메인이 필요하다.
+
 ---
 
 ## D-005. 원본 데이터는 Cloudflare R2에 둔다

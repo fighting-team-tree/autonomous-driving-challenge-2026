@@ -1,0 +1,82 @@
+name: mlflow
+
+# 팀 MLflow 트래킹 서버. 클라우드 VM에서 구동한다.
+#
+# 구성:  caddy(자동 HTTPS) → mlflow(내장 basic-auth) → postgres(백엔드 스토어)
+#        artifact 는 R2 로 보내되, 서버가 대리 전송한다(클라이언트에 R2 키 불필요).
+#
+# 배포 절차는 README.md 참고.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mlflow
+      POSTGRES_DB: mlflow
+      # URL-safe 문자만 사용할 것 (아래 backend-store-uri 에 그대로 들어간다)
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?infra/mlflow/.env 에 설정하세요}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mlflow -d mlflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mlflow:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # ── R2 (S3 호환) ────────────────────────────────────────────────
+      # 이 키는 **서버만** 가진다. 학습 클라이언트에는 뿌리지 않는다.
+      # 데이터 다운로드용 읽기 키와 분리해서 발급하는 것을 권장.
+      AWS_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?}
+      AWS_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?}
+      MLFLOW_S3_ENDPOINT_URL: ${R2_ENDPOINT:?}
+      AWS_DEFAULT_REGION: auto
+      # 대용량 artifact 를 대리 전송할 때 멀티파트 업로드 사용
+      MLFLOW_ENABLE_PROXY_MULTIPART_UPLOAD: "true"
+      # ── 내장 인증 ──────────────────────────────────────────────────
+      MLFLOW_AUTH_CONFIG_PATH: /app/basic_auth.ini
+    volumes:
+      # basic_auth.ini 는 관리자 비밀번호가 들어가므로 커밋하지 않는다.
+      # basic_auth.ini.example 을 복사해서 VM 에서 만든다.
+      - ./basic_auth.ini:/app/basic_auth.ini:ro
+      - authdb:/app/auth
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --app-name basic-auth
+      --backend-store-uri postgresql://mlflow:${POSTGRES_PASSWORD}@postgres/mlflow
+      --artifacts-destination s3://${R2_BUCKET:?}/mlflow-artifacts
+    expose:
+      - "5000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - mlflow
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # 도메인이 없으면 <VM_공인IP>.sslip.io 를 쓰면 된다.
+      # 예: 203.0.113.7.sslip.io  → Let's Encrypt 발급 가능
+      MLFLOW_HOSTNAME: ${MLFLOW_HOSTNAME:?}
+      ACME_EMAIL: ${ACME_EMAIL:?}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+
+volumes:
+  pgdata:
+  authdb:
+  caddydata:
+  caddyconfig:

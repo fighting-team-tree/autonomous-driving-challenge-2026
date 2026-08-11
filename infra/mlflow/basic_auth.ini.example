@@ -1,0 +1,19 @@
+; VM 에서 basic_auth.ini 로 복사한 뒤 값을 채운다. 실제 파일은 커밋되지 않는다.
+;   cp basic_auth.ini.example basic_auth.ini
+;
+; 팀원 계정은 서버를 띄운 뒤 관리자 계정으로 추가한다 (README 참고).
+
+[mlflow]
+
+; 로그인하지 않은 요청에 줄 권한.
+; 반드시 NO_PERMISSIONS 로 둘 것 — READ 로 두면 누구나 우리 실험 지표와
+; 하이퍼파라미터를 읽을 수 있고, 그러면 MLflow 를 비공개로 둔 의미가 사라진다.
+default_permission = NO_PERMISSIONS
+
+; 사용자 DB. 볼륨(authdb)에 두어 컨테이너를 재생성해도 계정이 유지되게 한다.
+database_uri = sqlite:////app/auth/basic_auth.db
+
+admin_username = CHANGE_ME
+admin_password = CHANGE_ME
+
+authorization_function = mlflow.server.auth:authenticate_request_basic_auth
