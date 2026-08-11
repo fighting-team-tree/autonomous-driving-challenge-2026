@@ -1,0 +1,28 @@
+# Caddy 는 Let's Encrypt 인증서를 자동 발급·갱신한다.
+# 인증 자체는 MLflow 내장 basic-auth 가 처리하므로 여기서는 프록시만 한다.
+#
+# HTTPS가 반드시 필요한 이유: basic auth 자격증명은 base64 평문으로 전송된다.
+# Colab/Runpod 에서 접속하면 공용 경로를 지나므로 TLS 없이는 그대로 노출된다.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$MLFLOW_HOSTNAME} {
+	encode zstd gzip
+
+	reverse_proxy mlflow:5000 {
+		# 대용량 artifact 대리 전송이 중간에 끊기지 않도록 여유를 준다
+		transport http {
+			read_timeout 1h
+			write_timeout 1h
+		}
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+	}
+}
